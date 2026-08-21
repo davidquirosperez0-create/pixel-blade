@@ -464,17 +464,25 @@ function startGame(){
   playerName=name;
   document.getElementById('startScreen').style.display='none';
   document.getElementById('deathScreen').style.display='none';
-  running=true;G=new Game();G.loop();
+  const urlParams=new URLSearchParams(window.location.search);
+  const roomCode=urlParams.get('room');
+  if(roomCode&&roomCode.length===4){
+    running=true;G=new Game();G.loop();
+    setTimeout(()=>{mpJoin(roomCode)},500);
+  }else{
+    running=true;G=new Game();G.loop();
+  }
 }
 
 let ws=null,isHost=false,remotePlayer=null,mpCode='';
 function showMP(){document.getElementById('startScreen').style.display='none';document.getElementById('mpLobby').style.display='flex'}
 function hideMP(){document.getElementById('mpLobby').style.display='none';document.getElementById('mpWait').style.display='none';document.getElementById('startScreen').style.display='flex'}
-function showJoinUI(){
+function showJoinUI(){document.getElementById('mpJoinCode').focus()}
+function mpJoinFromInput(){
   const n=document.getElementById('mpName').value.trim()||'Jugador';
   playerName=n;
-  const code=prompt('Codigo de sala (4 digitos):');
-  if(!code||code.length!==4){alert('Codigo invalido');return}
+  const code=document.getElementById('mpJoinCode').value.trim();
+  if(!code||code.length!==4){alert('Introduce un codigo de 4 digitos');return}
   mpJoin(code);
 }
 function startMPGame(){
@@ -488,25 +496,31 @@ function mpConnect(url,onMsg){
   ws.onopen=()=>{console.log('Conectado al servidor')};
   ws.onmessage=onMsg;
   ws.onerror=()=>{alert('Error de conexion. Asegurate de que el servidor esta corriendo.')};
-  ws.onclose=()=>{if(running){alert('Desconectado del servidor');mpLeave()}};
+  ws.onclose=()=>{if(running&&!shopOpen){mpLeave()}};
   return ws;
 }
-function getWSUrl(){const h=location.hostname||'localhost';return 'ws://'+h+':3000'}
+function getServerUrl(){
+  const loc=location;
+  if(loc.hostname==='localhost'||loc.hostname==='127.0.0.1')return 'ws://'+loc.hostname+':3000';
+  return 'wss://'+loc.hostname;
+}
+function getGameUrl(code){return location.origin+location.pathname+'?room='+code}
 function mpCreate(){
   const n=document.getElementById('mpName').value.trim()||'Jugador';
   playerName=n;
-  mpConnect(getWSUrl(),e=>{
+  document.getElementById('mpStatus').textContent='Conectando...';
+  mpConnect(getServerUrl(),e=>{
     const msg=JSON.parse(e.data);
     if(msg.type==='created'){
       isHost=true;mpCode=msg.code;
       document.getElementById('mpLobby').style.display='none';
       document.getElementById('mpWait').style.display='flex';
       document.getElementById('mpRoomCode').textContent=msg.code;
-      document.getElementById('mpWaitStatus').textContent='Esperando jugador...';
+      document.getElementById('mpWaitStatus').innerHTML='Esperando jugador...<br><br><span style="color:#4AF;font-size:13px">Comparte este link:<br><a href="'+getGameUrl(msg.code)+'" style="color:#4AF;word-break:break-all" target="_blank">'+getGameUrl(msg.code)+'</a></span>';
       ws.send(JSON.stringify({type:'create'}));
     }
     if(msg.type==='playerJoined'){
-      document.getElementById('mpWaitStatus').textContent=msg.name+' se unio!';
+      document.getElementById('mpWaitStatus').innerHTML='<span style="color:#0F0">'+msg.name+' se unio!</span>';
       setTimeout(()=>{ws.send(JSON.stringify({type:'startGame'}));startMPGame()},1000);
     }
     if(msg.type==='input'){
@@ -515,11 +529,12 @@ function mpCreate(){
       if(msg.data.atk&&G)remotePlayer.atkAnim=10;
     }
   });
-  setTimeout(()=>{if(ws&&ws.readyState<=1)ws.send(JSON.stringify({type:'create'}))},200);
+  setTimeout(()=>{if(ws&&ws.readyState<=1)ws.send(JSON.stringify({type:'create'}))},300);
 }
 function mpJoin(code){
   const n=playerName||'Jugador';
-  mpConnect(getWSUrl(),e=>{
+  document.getElementById('mpStatus').textContent='Conectando a sala '+code+'...';
+  mpConnect(getServerUrl(),e=>{
     const msg=JSON.parse(e.data);
     if(msg.type==='joined'){
       isHost=false;mpCode=msg.code;
@@ -538,10 +553,11 @@ function mpJoin(code){
         if(msg.data.p2x!==undefined){if(!remotePlayer)remotePlayer={x:0,y:0,wpn:0,arm:-1,face:'down',aFrame:0};remotePlayer.x=msg.data.p2x;remotePlayer.y=msg.data.p2y;remotePlayer.face=msg.data.p2face;remotePlayer.wpn=msg.data.p2wpn;remotePlayer.arm=msg.data.p2arm;if(msg.data.p2atk)remotePlayer.atkAnim=10}
       }
     }
+    if(msg.type==='error'){document.getElementById('mpStatus').textContent=msg.msg;alert(msg.msg)}
     if(msg.type==='hostLeft'){alert('El host se desconecto');mpLeave()}
     if(msg.type==='playerLeft'){remotePlayer=null}
   });
-  setTimeout(()=>{if(ws&&ws.readyState<=1)ws.send(JSON.stringify({type:'join',code,name:n}))},200);
+  setTimeout(()=>{if(ws&&ws.readyState<=1)ws.send(JSON.stringify({type:'join',code,name:n}))},300);
 }
 function mpLeave(){
   if(ws){try{ws.send(JSON.stringify({type:'leave'}))}catch(e){}ws.close();ws=null}

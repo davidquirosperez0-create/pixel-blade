@@ -93,8 +93,13 @@ canvas{display:block;width:100vw;height:100vh;image-rendering:pixelated;image-re
     <input type="text" id="mpName" maxlength="12" placeholder="Jugador">
     <div class="mpBtns">
       <button onclick="mpCreate()">CREAR SALA</button>
-      <button onclick="showJoinUI()">UNIRSE</button>
       <button class="cancel" onclick="hideMP()">VOLVER</button>
+    </div>
+    <hr style="border-color:#333;margin:18px 0">
+    <label>Unirse a sala (codigo):</label>
+    <input type="text" id="mpJoinCode" maxlength="4" placeholder="0000" style="letter-spacing:8px;font-size:24px">
+    <div class="mpBtns">
+      <button onclick="mpJoinFromInput()">UNIRSE</button>
     </div>
     <div class="mpStatus" id="mpStatus"></div>
   </div>
