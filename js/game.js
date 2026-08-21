@@ -467,8 +467,12 @@ function startGame(){
   const urlParams=new URLSearchParams(window.location.search);
   const roomCode=urlParams.get('room');
   if(roomCode&&roomCode.length===4){
+    document.getElementById('mpLobby').style.display='none';
+    document.getElementById('mpWait').style.display='flex';
+    document.getElementById('mpRoomCode').textContent=roomCode;
+    document.getElementById('mpWaitStatus').textContent='Conectando a sala '+roomCode+'...';
     running=true;G=new Game();G.loop();
-    setTimeout(()=>{mpJoin(roomCode)},500);
+    mpJoin(roomCode);
   }else{
     running=true;G=new Game();G.loop();
   }
@@ -496,7 +500,7 @@ function mpConnect(url,onMsg,onOpen){
   ws.onopen=()=>{document.getElementById('mpStatus').textContent='Conectado!';console.log('Conectado al servidor');if(onOpen)onOpen()};
   ws.onmessage=onMsg;
   ws.onerror=()=>{document.getElementById('mpStatus').innerHTML='<span style="color:#F44">No hay servidor multiplayer.<br>Despliega el servidor en Render.com:<br><a href="https://render.com" style="color:#4AF" target="_blank">render.com</a></span>';ws=null};
-  ws.onclose=()=>{if(running&&!shopOpen){mpLeave()}};
+  ws.onclose=()=>{if(running&&!shopOpen&&mpCode){mpLeave()}};
   return ws;
 }
 function getServerUrl(){
