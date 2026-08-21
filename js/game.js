@@ -521,7 +521,6 @@ function mpCreate(){
       document.getElementById('mpRoomCode').textContent=msg.code;
       const link=getGameUrl(msg.code);
       document.getElementById('mpWaitStatus').innerHTML='Esperando jugador...<br><br><span style="color:#4AF;font-size:13px">Comparte este link:<br><a href="'+link+'" style="color:#4AF;word-break:break-all" target="_blank">'+link+'</a></span>';
-      ws.send(JSON.stringify({type:'create',code:msg.code}));
     }
     if(msg.type==='error'){document.getElementById('mpStatus').innerHTML='<span style="color:#F44">'+msg.msg+'</span>';ws=null}
     if(msg.type==='playerJoined'){
@@ -534,7 +533,7 @@ function mpCreate(){
       if(msg.data.atk&&G)remotePlayer.atkAnim=10;
     }
   });
-  setTimeout(()=>{if(ws&&ws.readyState<=1)ws.send(JSON.stringify({type:'create',code:customCode}))},300);
+  setTimeout(()=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:'create',code:customCode}))},500);
 }
 function mpJoin(code){
   const n=playerName||'Jugador';
@@ -547,7 +546,6 @@ function mpJoin(code){
       document.getElementById('mpWait').style.display='flex';
       document.getElementById('mpRoomCode').textContent=msg.code;
       document.getElementById('mpWaitStatus').textContent='Conectado! Esperando inicio...';
-      ws.send(JSON.stringify({type:'join',code,name:n}));
     }
     if(msg.type==='gameStart'){
       startMPGame();
@@ -558,11 +556,11 @@ function mpJoin(code){
         if(msg.data.p2x!==undefined){if(!remotePlayer)remotePlayer={x:0,y:0,wpn:0,arm:-1,face:'down',aFrame:0};remotePlayer.x=msg.data.p2x;remotePlayer.y=msg.data.p2y;remotePlayer.face=msg.data.p2face;remotePlayer.wpn=msg.data.p2wpn;remotePlayer.arm=msg.data.p2arm;if(msg.data.p2atk)remotePlayer.atkAnim=10}
       }
     }
-    if(msg.type==='error'){document.getElementById('mpStatus').textContent=msg.msg;alert(msg.msg)}
+    if(msg.type==='error'){document.getElementById('mpStatus').innerHTML='<span style="color:#F44">'+msg.msg+'</span>';ws=null}
     if(msg.type==='hostLeft'){alert('El host se desconecto');mpLeave()}
     if(msg.type==='playerLeft'){remotePlayer=null}
   });
-  setTimeout(()=>{if(ws&&ws.readyState<=1)ws.send(JSON.stringify({type:'join',code,name:n}))},300);
+  setTimeout(()=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:'join',code,name:n}))},500);
 }
 function mpLeave(){
   if(ws){try{ws.send(JSON.stringify({type:'leave'}))}catch(e){}ws.close();ws=null}
