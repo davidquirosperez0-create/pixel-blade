@@ -487,15 +487,15 @@ function mpConnect(url,onMsg){
   ws=new WebSocket(url);
   ws.onopen=()=>{console.log('Conectado al servidor')};
   ws.onmessage=onMsg;
-  ws.onerror=()=>{alert('Error de conexion con el servidor')};
+  ws.onerror=()=>{alert('Error de conexion. Asegurate de que el servidor esta corriendo.')};
   ws.onclose=()=>{if(running){alert('Desconectado del servidor');mpLeave()}};
   return ws;
 }
+function getWSUrl(){const h=location.hostname||'localhost';return 'ws://'+h+':3000'}
 function mpCreate(){
   const n=document.getElementById('mpName').value.trim()||'Jugador';
   playerName=n;
-  const host=location.hostname||'localhost';
-  mpConnect('ws://'+host+':3000',e=>{
+  mpConnect(getWSUrl(),e=>{
     const msg=JSON.parse(e.data);
     if(msg.type==='created'){
       isHost=true;mpCode=msg.code;
@@ -519,8 +519,7 @@ function mpCreate(){
 }
 function mpJoin(code){
   const n=playerName||'Jugador';
-  const host=location.hostname||'localhost';
-  mpConnect('ws://'+host+':3000',e=>{
+  mpConnect(getWSUrl(),e=>{
     const msg=JSON.parse(e.data);
     if(msg.type==='joined'){
       isHost=false;mpCode=msg.code;
