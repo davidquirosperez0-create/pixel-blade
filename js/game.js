@@ -403,9 +403,10 @@ class Game{
     if(!isHost&&ws&&ws.readyState===1){
       mpSendInput();
       if(mpGameState){
+        if(mpGameState.p2){this.player.x=mpGameState.p2.x;this.player.y=mpGameState.p2.y;this.player.face=mpGameState.p2.face;this.player.wpn=mpGameState.p2.wpn;this.player.arm=mpGameState.p2.arm;this.player.atkF=mpGameState.p2.atkF?10:0;this.player.aFrame=mpGameState.p2.aFrame;this.player.hp=mpGameState.p2.hp;this.player.mhp=mpGameState.p2.mhp;this.player.exp=mpGameState.p2.exp;this.player.lv=mpGameState.p2.lv;this.player.coins=mpGameState.p2.coins;this.player.pots=mpGameState.p2.pots}
+        if(mpGameState.p1){remotePlayer={x:mpGameState.p1.x,y:mpGameState.p1.y,face:mpGameState.p1.face,wpn:mpGameState.p1.wpn,arm:mpGameState.p1.arm,atkF:mpGameState.p1.atkF,aFrame:mpGameState.p1.aFrame,hp:mpGameState.p1.hp,mhp:mpGameState.p1.mhp}}
         this.enemies=mpGameState.enemies.map(e=>{if(e.type===2)return Object.assign(new Boss(e.x,e.y,this.wave),{hp:e.hp,x:e.x,y:e.y,hurtT:e.hurtT,slow:e.slow,phase:e.phase,aFrame:e.aFrame,alive:true});if(e.type===1)return Object.assign(new Knight(e.x,e.y),{hp:e.hp,x:e.x,y:e.y,hurtT:e.hurtT,slow:e.slow,charging:!!e.face,aFrame:e.aFrame,alive:true});return Object.assign(new Goblin(e.x,e.y),{hp:e.hp,x:e.x,y:e.y,hurtT:e.hurtT,slow:e.slow,aFrame:e.aFrame,alive:true})});
-        this.wave=mpGameState.wave;this.waveState=mpGameState.waveState;this.totalKills=mpGameState.totalKills;
-        remotePlayer=mpGameState.p2;
+        this.wave=mpGameState.wave;this.waveState=mpGameState.waveState;this.totalKills=mpGameState.totalKills;this.time=mpGameState.time||this.time;
       }
       return;
     }
