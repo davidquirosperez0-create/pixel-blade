@@ -501,6 +501,7 @@ function mpConnect(url,onMsg){
 }
 function getServerUrl(){
   const loc=location;
+  if(loc.hostname==='localhost'||loc.hostname==='127.0.0.1')return 'ws://localhost:3000';
   const proto=loc.protocol==='https:'?'wss:':'ws:';
   return proto+'//'+loc.host;
 }
