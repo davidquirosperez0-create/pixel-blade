@@ -89,6 +89,11 @@ canvas{display:block;width:100vw;height:100vh;image-rendering:pixelated;image-re
 <div id="mpLobby">
   <h2>MULTIJUGADOR ONLINE</h2>
   <div class="mpBox">
+    <div style="background:#222;border:1px solid #555;border-radius:6px;padding:10px;margin-bottom:14px;font-size:11px;color:#aaa;line-height:1.5">
+      Para jugar online necesitas el servidor WebSocket.<br>
+      Opcion 1: Ejecuta <b style="color:#fff">cd server && npm install && npm start</b> en tu PC<br>
+      Opcion 2: Despliega gratis en <a href="https://render.com" style="color:#4AF" target="_blank">render.com</a> (usa render.yaml automatico)
+    </div>
     <label>Tu nombre:</label>
     <input type="text" id="mpName" maxlength="12" placeholder="Jugador">
     <div class="mpBtns">

@@ -493,9 +493,9 @@ function startMPGame(){
 }
 function mpConnect(url,onMsg){
   ws=new WebSocket(url);
-  ws.onopen=()=>{console.log('Conectado al servidor')};
+  ws.onopen=()=>{document.getElementById('mpStatus').textContent='Conectado!';console.log('Conectado al servidor')};
   ws.onmessage=onMsg;
-  ws.onerror=()=>{alert('Error de conexion. Asegurate de que el servidor esta corriendo.')};
+  ws.onerror=()=>{document.getElementById('mpStatus').innerHTML='<span style="color:#F44">No hay servidor multiplayer.<br>Despliega el servidor en Render.com:<br><a href="https://render.com" style="color:#4AF" target="_blank">render.com</a></span>';ws=null};
   ws.onclose=()=>{if(running&&!shopOpen){mpLeave()}};
   return ws;
 }
