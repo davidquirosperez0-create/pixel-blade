@@ -24,8 +24,8 @@ wss.on('connection',ws=>{
 
     if(msg.type==='create'){
       const code=msg.code||genCode();
-      if(rooms[code]){ws.send(JSON.stringify({type:'error',msg:'Ese codigo ya esta en uso'}));return}
-      rooms[code]={host:ws,clients:new Map(),state:'lobby',wave:0,seed:Math.random()*999999|0};
+      if(rooms[code]){ws.send(JSON.stringify({type:'error',msg:'Sala ya existe'}));return}
+      rooms[code]={host:ws,hostState:null,clients:new Map(),clientInputs:{},state:'lobby',wave:0,seed:Math.random()*999999|0};
       playerId='host';currentRoom=code;
       ws.send(JSON.stringify({type:'created',code,playerId:'host'}));
     }
@@ -43,28 +43,28 @@ wss.on('connection',ws=>{
     }
 
     if(msg.type==='startGame'){
-      const room=rooms[currentRoom];
-      if(!room)return;room.state='playing';
+      const room=rooms[currentRoom];if(!room)return;room.state='playing';
       room.host.send(JSON.stringify({type:'gameStart',seed:room.seed}));
       room.clients.forEach((c,id)=>c.send(JSON.stringify({type:'gameStart',seed:room.seed,playerId:id})));
     }
 
-    if(msg.type==='state'){
+    if(msg.type==='gameState'){
+      const room=rooms[currentRoom];if(!room||playerId!=='host')return;
+      room.hostState=msg.data;
+      room.clients.forEach((c)=>{try{c.send(JSON.stringify({type:'gameState',data:msg.data}))}catch(e){}});
+    }
+
+    if(msg.type==='input'){
       const room=rooms[currentRoom];if(!room)return;
-      if(playerId==='host'){
-        room.clients.forEach(c=>{try{c.send(JSON.stringify({type:'state',data:msg.data}))}catch(e){}});
-      }else{
-        try{room.host.send(JSON.stringify({type:'input',playerId,data:msg.data}))}catch(e){}
+      if(playerId!=='host'&&room.host){
+        room.clientInputs[playerId]=msg.data;
+        try{room.host.send(JSON.stringify({type:'remoteInput',playerId,data:msg.data}))}catch(e){}
       }
     }
 
-    if(msg.type==='attack'){
-      const room=rooms[currentRoom];if(!room)return;
-      if(playerId==='host'){
-        room.clients.forEach(c=>{try{c.send(JSON.stringify({type:'attack',data:msg.data}))}catch(e){}});
-      }else{
-        try{room.host.send(JSON.stringify({type:'attack',playerId,data:msg.data}))}catch(e){}
-      }
+    if(msg.type==='hostInput'){
+      const room=rooms[currentRoom];if(!room||playerId!=='host')return;
+      room.clients.forEach((c)=>{try{c.send(JSON.stringify({type:'hostInput',data:msg.data}))}catch(e){}});
     }
 
     if(msg.type==='leave'||msg.type==='disconnect')leaveRoom();
@@ -78,6 +78,7 @@ wss.on('connection',ws=>{
       delete rooms[currentRoom];
     }else{
       room.clients.delete(playerId);
+      delete room.clientInputs[playerId];
       room.host.send(JSON.stringify({type:'playerLeft',playerId}));
     }
     currentRoom=null;playerId=null;

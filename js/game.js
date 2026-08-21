@@ -399,10 +399,22 @@ class Game{
   loop(){if(!running)return;this.update();this.draw();requestAnimationFrame(()=>this.loop())}
   update(){
     this.time++;if(this.shake>0)this.shake-=.5;if(shopOpen||invOpen)return;
+
+    if(!isHost&&ws&&ws.readyState===1){
+      mpSendInput();
+      if(mpGameState){
+        this.enemies=mpGameState.enemies.map(e=>{if(e.type===2)return Object.assign(new Boss(e.x,e.y,this.wave),{hp:e.hp,x:e.x,y:e.y,hurtT:e.hurtT,slow:e.slow,phase:e.phase,aFrame:e.aFrame,alive:true});if(e.type===1)return Object.assign(new Knight(e.x,e.y),{hp:e.hp,x:e.x,y:e.y,hurtT:e.hurtT,slow:e.slow,charging:!!e.face,aFrame:e.aFrame,alive:true});return Object.assign(new Goblin(e.x,e.y),{hp:e.hp,x:e.x,y:e.y,hurtT:e.hurtT,slow:e.slow,aFrame:e.aFrame,alive:true})});
+        this.wave=mpGameState.wave;this.waveState=mpGameState.waveState;this.totalKills=mpGameState.totalKills;
+        remotePlayer=mpGameState.p2;
+      }
+      return;
+    }
+
     if(this.inLobby){const sx=W/1920,sy=H/1080,sc=Math.min(sx,sy);this.mwx=(MX-(W-1920*sc)/2)/sc;this.mwy=(MY-(H-1080*sc)/2)/sc}
     else{this.mwx=this.player.x-W/2+MX;this.mwy=this.player.y-H/2+MY}
     this.player.update(this);
     if(!this.inLobby){
+      mpSimulateRemotePlayer();
       if(this.waveState==='announce'){this.announceTimer--;if(this.announceTimer<=0)this.waveState='active'}
       else if(this.waveState==='active'){
         this.spawnTimer++;if(this.spawnTimer>=30&&this.waveEnemiesSpawned<this.waveTotalEnemies){this.spawnTimer=0;const batch=Math.min(3,this.waveTotalEnemies-this.waveEnemiesSpawned);for(let i=0;i<batch;i++){const sp=this.getSpawnPos();const kChance=Math.min(.5,.15+this.wave*.03);if(Math.random()<kChance)this.enemies.push(new Knight(sp.x,sp.y));else this.enemies.push(new Goblin(sp.x,sp.y));this.waveEnemiesSpawned++}}
@@ -417,7 +429,7 @@ class Game{
     this.enemies=this.enemies.filter(e=>e.alive);this.projs=this.projs.filter(p=>p.alive);
     this.expOrbs=this.expOrbs.filter(o=>o.alive);this.coinOrbs=this.coinOrbs.filter(c=>c.alive);
     this.chests=this.chests.filter(c=>!c.open);this.parts=this.parts.filter(p=>p.alive);this.dmgNums=this.dmgNums.filter(d=>d.alive);
-    if(ws&&ws.readyState===1&&this.time%3===0)mpSendState(this.player);
+    if(ws&&ws.readyState===1&&isHost&&this.time%2===0)mpSendState(this.player);
   }
   getSpawnPos(){const px=this.player.x,py=this.player.y,s=rI(0,3);if(s===0)return{x:-30,y:py+rn(-400,400)};if(s===1)return{x:2430,y:py+rn(-400,400)};if(s===2)return{x:px+rn(-400,400),y:-30};return{x:px+rn(-400,400),y:2430}}
   draw(){
@@ -447,7 +459,8 @@ class Game{
       const cx=this.player.x-W/2,cy=this.player.y-H/2;X.translate(-cx,-cy);
       drawSky(X,this.time,2400,2400);drawGround(X,2400,2400,200);
       this.chests.forEach(c=>c.draw(X,this.time));this.expOrbs.forEach(o=>o.draw(X));this.coinOrbs.forEach(c=>c.draw(X));
-      this.enemies.forEach(e=>e.draw(X));this.projs.forEach(p=>p.draw(X));this.player.draw(X);drawRemotePlayer(X);
+      this.enemies.forEach(e=>e.draw(X));this.projs.forEach(p=>p.draw(X));this.player.draw(X);
+      if(remotePlayer){ctx=X;ctx.globalAlpha=0.8;drawWarrior(ctx,remotePlayer.x-12,remotePlayer.y-32,remotePlayer.aFrame||0,remotePlayer.face||'down',remotePlayer.arm||-1,remotePlayer.wpn||0,remotePlayer.atkF?10:0);ctx.globalAlpha=1;ctx.fillStyle='#4AF';ctx.font='bold 10px Courier New';ctx.textAlign='center';ctx.fillText(mpCode?'Jugador 2':'',remotePlayer.x,remotePlayer.y-40);ctx.textAlign='left'}
       this.dmgNums.forEach(d=>d.draw(X));this.parts.forEach(p=>p.draw(X));
     }
     X.restore();drawHUD(X,this.player,this);
@@ -531,11 +544,8 @@ function mpCreate(){
       document.getElementById('mpWaitStatus').innerHTML='<span style="color:#0F0">'+msg.name+' se unio!</span>';
       setTimeout(()=>{ws.send(JSON.stringify({type:'startGame'}));startMPGame()},1000);
     }
-    if(msg.type==='input'){
-      if(!remotePlayer)remotePlayer={x:1200,y:1200,wpn:0,arm:-1,face:'down',aFrame:0};
-      remotePlayer.x=msg.data.x;remotePlayer.y=msg.data.y;remotePlayer.face=msg.data.face;remotePlayer.wpn=msg.data.wpn;remotePlayer.arm=msg.data.arm;
-      if(msg.data.atk&&G)remotePlayer.atkAnim=10;
-    }
+    if(msg.type==='remoteInput'){remoteInput=msg.data}
+    if(msg.type==='gameState'){mpGameState=msg.data}
   },()=>{ws.send(JSON.stringify({type:'create',code:customCode}))});
 }
 function mpJoin(code){
@@ -552,13 +562,9 @@ function mpJoin(code){
     }
     if(msg.type==='gameStart'){
       startMPGame();
-      remotePlayer={x:1200,y:1200,wpn:0,arm:-1,face:'down',aFrame:0};
+      remotePlayerObj={x:1200,y:1200,face:'down',wpn:0,arm:-1,aFrame:0,atkF:0,atkCD:0,hp:100,mhp:100};
     }
-    if(msg.type==='state'){
-      if(G&&msg.data){
-        if(msg.data.p2x!==undefined){if(!remotePlayer)remotePlayer={x:0,y:0,wpn:0,arm:-1,face:'down',aFrame:0};remotePlayer.x=msg.data.p2x;remotePlayer.y=msg.data.p2y;remotePlayer.face=msg.data.p2face;remotePlayer.wpn=msg.data.p2wpn;remotePlayer.arm=msg.data.p2arm;if(msg.data.p2atk)remotePlayer.atkAnim=10}
-      }
-    }
+    if(msg.type==='gameState'){mpGameState=msg.data}
     if(msg.type==='error'){document.getElementById('mpStatus').innerHTML='<span style="color:#F44">'+msg.msg+'</span>';ws=null}
     if(msg.type==='hostLeft'){alert('El host se desconecto');mpLeave()}
     if(msg.type==='playerLeft'){remotePlayer=null}
@@ -579,16 +585,72 @@ function showLB(){
   html+='</div></div>';document.body.insertAdjacentHTML('beforeend',html);
 }
 function changeName(){const n=prompt('Nuevo nombre de guerrero:');if(n&&n.trim()){setPlayerName(n.trim());alert('Nombre cambiado a: '+n.trim())}}
+
+let mpGameState=null;
+let remoteInput={keys:{},mx:0,my:0,mouseDown:false};
+let remotePlayerObj=null;
+
 function mpSendState(p){
-  if(!ws||ws.readyState!==1||!G)return;
-  if(isHost){ws.send(JSON.stringify({type:'state',data:{p2x:p.x,p2y:p.y,p2face:p.face,p2wpn:p.wpn,p2arm:p.arm,p2atk:p.atkF>0}}))}
-  else{ws.send(JSON.stringify({type:'state',data:{p2x:p.x,p2y:p.y,p2face:p.face,p2wpn:p.wpn,p2arm:p.arm,p2atk:p.atkF>0}}))}
+  if(!ws||ws.readyState!==1||!G||!isHost)return;
+  const s=G;
+  const enemies=s.enemies.filter(e=>e.alive).map(e=>({x:Math.round(e.x),y:Math.round(e.y),hp:e.hp,mhp:e.mhp,hurtT:e.hurtT,slow:e.slow,face:e instanceof Knight?(e.charging?1:0):0,type:e instanceof Boss?2:e instanceof Knight?1:0,phase:e.phase||0,aFrame:e.aFrame}));
+  const projs=s.projs.filter(p=>p.alive).map(p=>({x:Math.round(p.x),y:Math.round(p.y),type:p.type}));
+  const p1={x:Math.round(p.x),y:Math.round(p.y),face:p.face,wpn:p.wpn,arm:p.arm,atkF:p.atkF>0,aFrame:p.aFrame,hp:p.hp,mhp:p.mhp,exp:p.exp,lv:p.lv,coins:p.coins,pots:p.pots};
+  let p2=null;
+  if(remotePlayerObj){p2={x:Math.round(remotePlayerObj.x),y:Math.round(remotePlayerObj.y),face:remotePlayerObj.face,wpn:remotePlayerObj.wpn,arm:remotePlayerObj.arm,atkF:remotePlayerObj.atkF>0,aFrame:remotePlayerObj.aFrame,hp:remotePlayerObj.hp,mhp:remotePlayerObj.mhp}}
+  ws.send(JSON.stringify({type:'gameState',data:{p1,p2,enemies,projs,wave:s.wave,waveState:s.waveState,totalKills:s.totalKills,inLobby:s.inLobby,time:s.time,shake:s.shake}}));
 }
-function drawRemotePlayer(ctx){
-  if(!remotePlayer)return;
-  ctx.globalAlpha=0.8;
-  if(remotePlayer.atkAnim>0)remotePlayer.atkAnim--;
-  drawWarrior(ctx,remotePlayer.x-12,remotePlayer.y-32,remotePlayer.aFrame||0,remotePlayer.face||'down',remotePlayer.arm||-1,remotePlayer.wpn||0,remotePlayer.atkAnim||0);
-  ctx.globalAlpha=1;
-  ctx.fillStyle='#4AF';ctx.font='bold 10px Courier New';ctx.textAlign='center';ctx.fillText(playerName||'P2',remotePlayer.x,remotePlayer.y-40);ctx.textAlign='left';
+
+function mpSendInput(){
+  if(!ws||ws.readyState!==1||isHost)return;
+  ws.send(JSON.stringify({type:'input',data:{keys:K,mx:MX,my:MY,mouseDown}}));
+}
+
+function mpApplyState(data){
+  if(!G)return;
+  mpGameState=data;
+  if(data.p1){
+    G.player.x=data.p1.x;G.player.y=data.p1.y;
+    G.wave=data.wave;G.waveState=data.waveState;G.totalKills=data.totalKills;
+  }
+  G.enemies=data.enemies.map(e=>{
+    if(e.type===2)return Object.assign(new Boss(e.x,e.y,G.wave),{hp:e.hp,x:e.x,y:e.y,hurtT:e.hurtT,slow:e.slow,phase:e.phase,aFrame:e.aFrame});
+    if(e.type===1)return Object.assign(new Knight(e.x,e.y),{hp:e.hp,x:e.x,y:e.y,hurtT:e.hurtT,slow:e.slow,charging:e.face===1,aFrame:e.aFrame});
+    return Object.assign(new Goblin(e.x,e.y),{hp:e.hp,x:e.x,y:e.y,hurtT:e.hurtT,slow:e.slow,aFrame:e.aFrame});
+  });
+  G.projs=data.projs.map(p=>Object.assign(new Proj(p.x,p.y,0,0,0,p.type),{x:p.x,y:p.y,alive:true}));
+  remotePlayer=data.p2;
+}
+
+function mpSimulateRemotePlayer(){
+  if(!remoteInput||!remoteInput.keys||!G||G.inLobby)return;
+  if(!remotePlayerObj){
+    remotePlayerObj={x:1200,y:1200,face:'down',wpn:0,arm:-1,aFrame:0,atkF:0,atkCD:0,dashCD:0,hp:100,mhp:100,inv:0,bSpd:3.2,spd:3.2};
+  }
+  const rp=remotePlayerObj;
+  if(rp.atkF>0)rp.atkF-=.5;
+  if(rp.atkCD>0)rp.atkCD--;
+  const dx=remoteInput.mx-(W/2);
+  const dy=remoteInput.my-(H/2);
+  if(Math.abs(dx)>10||Math.abs(dy)>10){
+    const a=Math.atan2(dy,dx);
+    if(a>-0.75&&a<0.75)rp.face='right';
+    else if(a>0.75&&a<2.36)rp.face='down';
+    else if(a<-0.75&&a>-2.36)rp.face='up';
+    else rp.face='left';
+  }
+  let mx=0,my=0;
+  const k=remoteInput.keys;
+  if(k.w||k.arrowup)my=-1;if(k.s||k.arrowdown)my=1;
+  if(k.a||k.arrowleft)mx=-1;if(k.d||k.arrowright)mx=1;
+  if(mx!==0||my!==0){const l=Math.hypot(mx,my);mx/=l;my/=l}
+  rp.x+=mx*rp.bSpd;rp.y+=my*rp.bSpd;
+  rp.x=cl(rp.x,20,2400);rp.y=cl(rp.y,20,2400);
+  if(mx!==0||my!==0){rp.aFrame=(rp.aFrame+1)%6}
+  if(remoteInput.mouseDown&&rp.atkCD<=0){
+    rp.atkF=10;rp.atkCD=20;
+    const ang=Math.atan2(remoteInput.my-H/2,remoteInput.mx-W/2);
+    const srx=G.player.x+rp.x,sry=G.player.y+rp.y;
+    G.enemies.forEach(e=>{if(!e.alive)return;if(dst(rp.x,rp.y,e.x,e.y)<60)e.hurt(18,G)});
+  }
 }
