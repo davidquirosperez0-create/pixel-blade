@@ -20,7 +20,7 @@ function rI(a,b){return Math.floor(rn(a,b+1))}
 function cl(v,a,b){return Math.max(a,Math.min(b,v))}
 function saveData(d){try{localStorage.setItem('pbSave',JSON.stringify(d))}catch(e){}}
 function loadData(){try{return JSON.parse(localStorage.getItem('pbSave'))}catch(e){return null}}
-function saveLB(e){try{let lb=JSON.parse(localStorage.getItem('pbLB')||'[]');lb.push(e);lb.sort((a,b)=>b.wave-a.wave||b.kills-a.kills||b.lv-a.lv);localStorage.setItem('pbLB',JSON.stringify(lb.slice(0,20)))}catch(e){}}
+function saveLB(e){try{let lb=JSON.parse(localStorage.getItem('pbLB')||'[]');const idx=lb.findIndex(x=>x.id===e.id);if(idx>=0){if(e.wave>lb[idx].wave||(e.wave===lb[idx].wave&&e.kills>lb[idx].kills))lb[idx]=e}else lb.push(e);lb.sort((a,b)=>b.wave-a.wave||b.kills-a.kills||b.lv-a.lv);localStorage.setItem('pbLB',JSON.stringify(lb.slice(0,20)))}catch(e){}}
 function loadLB(){try{return JSON.parse(localStorage.getItem('pbLB')||'[]')}catch(e){return[]}}
 function drawWarrior(ctx,x,y,frame,face,armor,wpn,atkF){
   const sk='#FFD5A0',hr='#6B3A2A';
@@ -270,7 +270,7 @@ class Player{
       for(const s of g.shops)if(dst(this.x,this.y,s.x+35,s.y+52)<70){openShop(s.type);return}}
     for(const c of g.chests)if(!c.open&&dst(this.x,this.y,c.x,c.y)<60&&this.exp>=c.cost){this.exp-=c.cost;c.open=true;c.loot(g);return}
   }
-  hurt(dmg,g){if(this.inv>0)return;const ad=[0,.15,.3,.5][this.arm+1],a=dmg*(1-ad);this.hp-=a;this.inv=50;g.shake=8;g.dmgNums.push(new DmgN(this.x,this.y-20,'-'+Math.ceil(a),'#F44'));for(let i=0;i<5;i++)g.parts.push(new Part(this.x+rn(-15,15),this.y+rn(-15,15),'#F00',20));if(this.hp<=0){this.hp=0;running=false;saveData({coins:this.coins,exp:this.exp,lv:this.lv,hp:0,wup:this.wup,aUnl:this.aUnl,arm:this.arm,pots:this.pots});const entry={name:playerName,wave:g.wave,kills:g.totalKills,lv:this.lv,date:Date.now()};saveLB(entry);const lb=loadLB();let html='Kills: '+g.totalKills+' | Oleadas: '+g.wave+' | Nivel: '+this.lv+'<br><br><b style="color:#FFD700">TABLERO DE LIDERES:</b><br>';lb.slice(0,10).forEach((e,i)=>{const mk=e.date===entry.date?'<span style="color:#FF0"> >> </span>':'    ';html+=mk+(i+1)+'. '+e.name+' - Oleada:'+e.wave+' Kills:'+e.kills+' Nv:'+e.lv+'<br>'});document.getElementById('dStats').innerHTML=html;document.getElementById('deathScreen').style.display='flex'}}
+  hurt(dmg,g){if(this.inv>0)return;const ad=[0,.15,.3,.5][this.arm+1],a=dmg*(1-ad);this.hp-=a;this.inv=50;g.shake=8;g.dmgNums.push(new DmgN(this.x,this.y-20,'-'+Math.ceil(a),'#F44'));for(let i=0;i<5;i++)g.parts.push(new Part(this.x+rn(-15,15),this.y+rn(-15,15),'#F00',20));if(this.hp<=0){this.hp=0;running=false;saveData({coins:this.coins,exp:this.exp,lv:this.lv,hp:0,wup:this.wup,aUnl:this.aUnl,arm:this.arm,pots:this.pots});const entry={id:getPlayerId(),name:playerName,wave:g.wave,kills:g.totalKills,lv:this.lv,date:Date.now()};saveLB(entry);const lb=loadLB();let html='Kills: '+g.totalKills+' | Oleadas: '+g.wave+' | Nivel: '+this.lv+'<br><br><b style="color:#FFD700">TABLERO DE LIDERES:</b><br>';lb.slice(0,10).forEach((e,i)=>{const mk=e.date===entry.date?'<span style="color:#FF0"> >> </span>':'    ';html+=mk+(i+1)+'. '+e.name+' - Oleada:'+e.wave+' Kills:'+e.kills+' Nv:'+e.lv+'<br>'});document.getElementById('dStats').innerHTML=html;document.getElementById('deathScreen').style.display='flex'}}
   gainExp(amt,g){this.exp+=amt;const n=this.lv*80;if(this.exp>=n){this.exp-=n;this.lv++;this.mhp+=12;this.hp=Math.min(this.hp+30,this.mhp);g.dmgNums.push(new DmgN(this.x,this.y-30,'\u00a1NIVEL '+this.lv+'!','#FFD700'));for(let i=0;i<20;i++)g.parts.push(new Part(this.x+rn(-30,30),this.y+rn(-30,30),['#FFD700','#FFA500','#FF0'][i%3],40))}}
   draw(ctx){if(this.inv>0&&Math.floor(this.inv/4)%2===0)ctx.globalAlpha=.4;
     drawWarrior(ctx,this.x-12,this.y-32,this.aFrame,this.face,this.arm,this.wpn,this.atkF);ctx.globalAlpha=1}
@@ -454,13 +454,14 @@ class Game{
     if(invOpen)drawInventory(X,this.player);
   }
 }
+function getPlayerId(){let id=localStorage.getItem('pb_id');if(!id){id='p'+Date.now()+Math.random().toString(36).substr(2,6);localStorage.setItem('pb_id',id)}return id}
+function getPlayerName(){return localStorage.getItem('pb_name')||''}
+function setPlayerName(n){localStorage.setItem('pb_name',n)}
 function startGame(){
-  const name=prompt('Ingresa tu nombre de guerrero:');
-  if(!name||!name.trim())return;
-  playerName=name.trim();
-  const existing=localStorage.getItem('pb_pwd_'+playerName);
-  if(existing){const pwd=prompt('Contrase\u00f1a para '+playerName+':');if(pwd!==existing){alert('Contrase\u00f1a incorrecta!');return}}
-  else{const pwd=prompt('Crea una contrase\u00f1a para '+playerName+':');if(!pwd)return;localStorage.setItem('pb_pwd_'+playerName,pwd)}
+  const pid=getPlayerId();
+  let name=getPlayerName();
+  if(!name){name=prompt('Ingresa tu nombre de guerrero:');if(!name||!name.trim())return;name=name.trim();setPlayerName(name)}
+  playerName=name;
   document.getElementById('startScreen').style.display='none';
   document.getElementById('deathScreen').style.display='none';
   running=true;G=new Game();G.loop();
@@ -550,6 +551,14 @@ function mpLeave(){
   document.getElementById('mpLobby').style.display='none';
   document.getElementById('startScreen').style.display='flex';
 }
+function showLB(){
+  const lb=loadLB();
+  if(!lb.length){alert('Aun no hay registros.');return}
+  let html='<div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:200;display:flex;justify-content:center;align-items:center" onclick="this.remove()"><div style="background:#1a0f0a;border:3px solid #8B4513;padding:30px;min-width:400px;max-height:80vh;overflow-y:auto" onclick="event.stopPropagation()"><h2 style="color:#FFD700;text-align:center;margin-bottom:20px">TABLERO DE LIDERES</h2>';
+  lb.slice(0,15).forEach((e,i)=>{const gold=i===0?'#FFD700':i===1?'#C0C0C0':i===2?'#CD7F32':'#AAA';html+='<div style="display:flex;justify-content:space-between;padding:8px 12px;border-bottom:1px solid #333;color:'+gold+'"><span>'+(i+1)+'. '+e.name+'</span><span>Oleada:'+e.wave+' Kills:'+e.kills+' Nv:'+e.lv+'</span></div>'});
+  html+='</div></div>';document.body.insertAdjacentHTML('beforeend',html);
+}
+function changeName(){const n=prompt('Nuevo nombre de guerrero:');if(n&&n.trim()){setPlayerName(n.trim());alert('Nombre cambiado a: '+n.trim())}}
 function mpSendState(p){
   if(!ws||ws.readyState!==1||!G)return;
   if(isHost){ws.send(JSON.stringify({type:'state',data:{p2x:p.x,p2y:p.y,p2face:p.face,p2wpn:p.wpn,p2arm:p.arm,p2atk:p.atkF>0}}))}
