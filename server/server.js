@@ -23,7 +23,8 @@ wss.on('connection',ws=>{
     try{msg=JSON.parse(raw)}catch(e){return}
 
     if(msg.type==='create'){
-      const code=genCode();
+      const code=msg.code||genCode();
+      if(rooms[code]){ws.send(JSON.stringify({type:'error',msg:'Ese codigo ya esta en uso'}));return}
       rooms[code]={host:ws,clients:new Map(),state:'lobby',wave:0,seed:Math.random()*999999|0};
       playerId='host';currentRoom=code;
       ws.send(JSON.stringify({type:'created',code,playerId:'host'}));

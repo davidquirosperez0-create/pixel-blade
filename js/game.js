@@ -507,6 +507,8 @@ function getServerUrl(){
 function getGameUrl(code){return location.origin+location.pathname+'?room='+code}
 function mpCreate(){
   const n=document.getElementById('mpName').value.trim()||'Jugador';
+  const customCode=document.getElementById('mpCustomCode').value.trim();
+  if(!customCode||customCode.length!==4||!/^\d{4}$/.test(customCode)){alert('Introduce un codigo de 4 numeros (ej: 1234)');return}
   playerName=n;
   document.getElementById('mpStatus').textContent='Conectando...';
   mpConnect(getServerUrl(),e=>{
@@ -516,9 +518,11 @@ function mpCreate(){
       document.getElementById('mpLobby').style.display='none';
       document.getElementById('mpWait').style.display='flex';
       document.getElementById('mpRoomCode').textContent=msg.code;
-      document.getElementById('mpWaitStatus').innerHTML='Esperando jugador...<br><br><span style="color:#4AF;font-size:13px">Comparte este link:<br><a href="'+getGameUrl(msg.code)+'" style="color:#4AF;word-break:break-all" target="_blank">'+getGameUrl(msg.code)+'</a></span>';
-      ws.send(JSON.stringify({type:'create'}));
+      const link=getGameUrl(msg.code);
+      document.getElementById('mpWaitStatus').innerHTML='Esperando jugador...<br><br><span style="color:#4AF;font-size:13px">Comparte este link:<br><a href="'+link+'" style="color:#4AF;word-break:break-all" target="_blank">'+link+'</a></span>';
+      ws.send(JSON.stringify({type:'create',code:msg.code}));
     }
+    if(msg.type==='error'){document.getElementById('mpStatus').innerHTML='<span style="color:#F44">'+msg.msg+'</span>';ws=null}
     if(msg.type==='playerJoined'){
       document.getElementById('mpWaitStatus').innerHTML='<span style="color:#0F0">'+msg.name+' se unio!</span>';
       setTimeout(()=>{ws.send(JSON.stringify({type:'startGame'}));startMPGame()},1000);
@@ -529,7 +533,7 @@ function mpCreate(){
       if(msg.data.atk&&G)remotePlayer.atkAnim=10;
     }
   });
-  setTimeout(()=>{if(ws&&ws.readyState<=1)ws.send(JSON.stringify({type:'create'}))},300);
+  setTimeout(()=>{if(ws&&ws.readyState<=1)ws.send(JSON.stringify({type:'create',code:customCode}))},300);
 }
 function mpJoin(code){
   const n=playerName||'Jugador';
