@@ -523,7 +523,7 @@ function getServerUrl(){
   const proto=loc.protocol==='https:'?'wss:':'ws:';
   return proto+'//'+loc.host;
 }
-function getGameUrl(code){return location.origin+location.pathname+'?room='+code}
+function getGameUrl(code){return 'https://pixel-blade-server.onrender.com/?room='+code}
 function mpCreate(){
   const n=document.getElementById('mpName').value.trim()||'Jugador';
   const customCode=document.getElementById('mpCustomCode').value.trim();
