@@ -502,7 +502,7 @@ function mpConnect(url,onMsg){
 function getServerUrl(){
   const loc=location;
   if(loc.hostname==='localhost'||loc.hostname==='127.0.0.1')return 'ws://'+loc.hostname+':3000';
-  return 'wss://'+loc.hostname;
+  return 'wss://sour-flies-open.loca.lt';
 }
 function getGameUrl(code){return location.origin+location.pathname+'?room='+code}
 function mpCreate(){
