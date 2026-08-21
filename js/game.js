@@ -491,9 +491,9 @@ function startMPGame(){
   document.getElementById('deathScreen').style.display='none';
   running=true;G=new Game();G.loop();
 }
-function mpConnect(url,onMsg){
+function mpConnect(url,onMsg,onOpen){
   ws=new WebSocket(url);
-  ws.onopen=()=>{document.getElementById('mpStatus').textContent='Conectado!';console.log('Conectado al servidor')};
+  ws.onopen=()=>{document.getElementById('mpStatus').textContent='Conectado!';console.log('Conectado al servidor');if(onOpen)onOpen()};
   ws.onmessage=onMsg;
   ws.onerror=()=>{document.getElementById('mpStatus').innerHTML='<span style="color:#F44">No hay servidor multiplayer.<br>Despliega el servidor en Render.com:<br><a href="https://render.com" style="color:#4AF" target="_blank">render.com</a></span>';ws=null};
   ws.onclose=()=>{if(running&&!shopOpen){mpLeave()}};
@@ -532,8 +532,7 @@ function mpCreate(){
       remotePlayer.x=msg.data.x;remotePlayer.y=msg.data.y;remotePlayer.face=msg.data.face;remotePlayer.wpn=msg.data.wpn;remotePlayer.arm=msg.data.arm;
       if(msg.data.atk&&G)remotePlayer.atkAnim=10;
     }
-  });
-  setTimeout(()=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:'create',code:customCode}))},500);
+  },()=>{ws.send(JSON.stringify({type:'create',code:customCode}))});
 }
 function mpJoin(code){
   const n=playerName||'Jugador';
@@ -559,8 +558,7 @@ function mpJoin(code){
     if(msg.type==='error'){document.getElementById('mpStatus').innerHTML='<span style="color:#F44">'+msg.msg+'</span>';ws=null}
     if(msg.type==='hostLeft'){alert('El host se desconecto');mpLeave()}
     if(msg.type==='playerLeft'){remotePlayer=null}
-  });
-  setTimeout(()=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:'join',code,name:n}))},500);
+  },()=>{ws.send(JSON.stringify({type:'join',code,name:n}))});
 }
 function mpLeave(){
   if(ws){try{ws.send(JSON.stringify({type:'leave'}))}catch(e){}ws.close();ws=null}
