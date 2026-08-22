@@ -1,3 +1,9 @@
 ﻿node_modules/
 server/node_modules/
 *.log
+*.bak*
+tunnel-live.txt
+tunnel.txt
+tunnel2.txt
+tunnel3.txt
+tunnel-url.txt

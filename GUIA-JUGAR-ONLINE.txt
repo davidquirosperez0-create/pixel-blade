@@ -1,0 +1,150 @@
+GUIA PARA JUGAR ONLINE CON AMIGOS
+=================================
+(Pixel Blade - explicado paso a paso, sin conocimientos de informatica)
+
+IMPORTANTE: lee esto primero
+-----------------------------
+Para que tus amigos puedan jugar contigo DESDE SUS CASAS, el juego tiene que
+estar "colgado" en Internet en un sitio que no cambie de direccion. Ese sitio
+se llama "servidor" y aqui usamos uno gratuito llamado Render.com.
+
+Solo tienes que hacer este proceso UNA VEZ. Despues, siempre usareis la misma
+direccion (URL) y no habra que volver a tocar nada.
+
+Vas a necesitar 2 cuentas gratuitas:
+  1. Una cuenta en GitHub.com  (es como una carpeta online donde se guarda el juego)
+  2. Una cuenta en Render.com  (es el servidor que hace funcionar el multijugador)
+
+Todo es gratis. Solo necesitas un correo electronico.
+
+
+PASO 1 - Crear cuenta en GitHub
+-------------------------------
+1. Abre tu navegador (Chrome, Edge, Firefox...) y escribe:  github.com
+2. Pulsa el boton "Sign up" (Registrarse).
+3. Escribe tu correo, inventa una contraseña y un nombre de usuario.
+   (Ejemplo de usuario: tuNombre123)
+4. GitHub te enviara un correo con un codigo. Copialo y pegalo para verificar.
+5. Ya tienes cuenta de GitHub. No cierres la pagina todavia.
+
+
+PASO 2 - Subir el juego a GitHub
+--------------------------------
+(Esto es "copiar la carpeta del juego a tu cuenta online")
+
+1. En GitHub, arriba a la izquierda, pulsa el boton verde "New" (o el "+" arriba
+   a la derecha y luego "New repository").
+2. En "Repository name" escribe:  pixel-blade
+3. Deja todo lo demas como esta (Publico, sin marcar nada).
+4. Pulsa el boton verde "Create repository".
+5. Ahora te aparece una pantalla con la frase "or create a new repository on
+   the command line" y otras opciones. Busca el enlace que dice
+   "uploading an existing file" y pulsa ahi.
+6. Se abre una pagina donde puedes arrastrar archivos. Haz lo siguiente:
+   - Abre en tu PC la carpeta del juego (donde estan: index.html, la carpeta
+     "js", la carpeta "server", etc.).
+   - Arrastra TODA la carpeta del juego (o selecciona todos los archivos y
+     carpetas) y sueltalos en la zona punteada de la web.
+   - Importante: arrastra tambien las carpetas "js" y "server" enteras.
+   - Espera a que termine de subir (la barra se pone verde).
+7. Abajo, pulsa el boton verde "Commit changes".
+8. Listo. El juego ya esta en tu GitHub.
+
+
+PASO 3 - Crear cuenta en Render
+-------------------------------
+1. En otra pestaña del navegador escribe:  render.com
+2. Pulsa "Get Started" o "Sign up".
+3. Elige "Sign up with GitHub" (registrarse con GitHub). Asi se conecta solo.
+4. Acepta los permisos que te pida (pulsa "Authorize").
+5. Ya tienes cuenta de Render.
+
+
+PASO 4 - Crear el servidor del juego en Render
+----------------------------------------------
+1. En Render, pulsa el boton "New" (arriba a la derecha) y elige "Web Service".
+2. Te aparecera tu GitHub conectado. Busca el repositorio "pixel-blade" y
+   pulsa "Connect" (Conectar).
+3. Ahora rellena estos campos EXACTAMENTE asi:
+
+   - Name:  pixel-blade   (o el nombre que quieras, sin espacios)
+   - Region: elige la que te quede mas cerca (por ejemplo Frankfurt)
+   - Branch: main
+   - Build Command:   npm install
+   - Start Command:   node server/server.js
+   - Instance Type:   Free  (gratis)
+
+4. Baja hasta abajo y pulsa el boton "Create Web Service" (o "Deploy").
+5. Render empezara a instalar y montar el juego. Espera unos 2-3 minutos.
+   Veras "Deploying..." y luego "Live" (en verde) cuando termine.
+
+
+PASO 5 - Conseguir tu direccion (URL)
+-------------------------------------
+1. Cuando termine el despliegue, arriba a la izquierda de la pagina de tu
+   servicio veras una direccion parecida a esta:
+
+       https://pixel-blade.onrender.com
+
+   (Tu direccion tendra el nombre que pusiste en "Name").
+2. Ese enlace es LA DIRECCION DEL JUEGO. Copiala y guardala. No cambia nunca.
+
+
+PASO 6 - Probar que funciona
+----------------------------
+1. Pega esa direccion en el navegador y pulsa Enter.
+2. Deberia cargar el juego "Pixel Blade".
+3. Prueba el modo de un jugador: pulsa "COMENZAR" y verifica que funciona.
+4. Si todo va bien, el juego ya esta online para todo el mundo.
+
+
+PASO 7 - Jugar con tus amigos
+-----------------------------
+1. Manda a tus amigos TU direccion (ej: https://pixel-blade.onrender.com).
+   Es la misma para todos, siempre.
+2. Cada amigo abre la direccion en su navegador (en el movil o PC).
+3. Dentro del juego, todos pulsan el boton "ONLINE".
+
+   COMO JUGAR (quien CREA la sala y quienes se UNEN):
+
+   - UNA persona crea la sala:
+       a) En "Tu nombre" escribe su apodo.
+       b) En "Codigo de sala" inventa 4 numeros (ej: 1234).
+       c) Pulsa "CREAR SALA".
+       d) Se queda en la pantalla "Esperando jugadores..." y le aparece el
+          codigo. Lo dice a sus amigos por WhatsApp, llamada, etc.
+
+   - Los DEMAS se unen:
+       a) Escriben su apodo en "Tu nombre".
+       b) En "Unirse a sala (codigo)" escriben el codigo (ej: 1234).
+       c) Pulsan "UNIRSE".
+       d) Les aparecera "Conectado! Esperando inicio...".
+
+   - Cuando todos esten dentro, el que CREO la sala pulsa el boton "INICIAR".
+   - Ya estan jugando juntos.
+
+
+PROBLEMAS FRECUENTES (y solucion)
+---------------------------------
+- "La pagina tarda mucho en cargar la primera vez":
+  Es normal. Render es gratis y "duerme" el servidor cuando nadie lo usa.
+  La primera vez puede tardar 30-60 segundos en despertar. Espera y recarga.
+
+- "No hay salas activas":
+  Significa que aun nadie ha creado una sala. El primero debe pulsar CREAR SALA.
+
+- "Sala llena":
+  Solo caben 4 jugadores por sala. Cread otra sala con otro codigo.
+
+- "No hay servidor / Despliega en Render":
+  El servidor no esta despierto o el despliegue fallo. Espera 1 minuto y
+  recarga la pagina. Si sigue, vuelve a Render y comprueba que diga "Live".
+
+
+RESUMEN RAPIDO
+--------------
+  1. Sube el juego a GitHub (una vez).
+  2. Crea el servidor en Render (una vez).
+  3. Copia la direccion https://tuNombre.onrender.com
+  4. Comparte esa direccion con tus amigos.
+  5. Uno CREA SALA, los demas se UNEN con el codigo, y a jugar.
